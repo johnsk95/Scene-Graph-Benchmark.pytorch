@@ -35,14 +35,14 @@ from maskrcnn_benchmark.utils.miscellaneous import mkdir, save_config
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
 
 # where to load detected scene graph
-detected_path = '/home/kaihua/checkpoints/causal_sgdet_ctx_only/inference/VG_stanford_filtered_wth_attribute_test/'
+detected_path = '/home/john/checkpoints/causal_sgdet_ctx_only/inference/VG_stanford_filtered_wth_attribute_test/'
 # where to save the generated annotation
 output_path = '/data1/image_retrieval/sg_of_causal_sgdet_ctx_only.json'
 
 cap_graph = json.load(open('/data1/vg_capgraphs_anno.json'))
-vg_data = h5py.File('/home/kaihua/projects/maskrcnn-benchmark/datasets/vg/VG-SGG-with-attri.h5', 'r')
-vg_dict = json.load(open('/home/kaihua/projects/maskrcnn-benchmark/datasets/vg/VG-SGG-dicts-with-attri.json'))
-vg_info = json.load(open('/home/kaihua/projects/maskrcnn-benchmark/datasets/vg/image_data.json'))
+vg_data = h5py.File('/home/john/Scene-Graph-Benchmark.pytorch/datasets/vg/VG-SGG-with-attri.h5', 'r')
+vg_dict = json.load(open('/home/john/Scene-Graph-Benchmark.pytorch/datasets/vg/VG-SGG-dicts-with-attri.json'))
+vg_info = json.load(open('/home/john/Scene-Graph-Benchmark.pytorch/datasets/vg/image_data.json'))
 
 # generate union predicate vocabulary
 sgg_rel_vocab = list(set(cap_graph['idx_to_meta_predicate'].values()))

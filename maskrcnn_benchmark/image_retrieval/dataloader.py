@@ -36,7 +36,7 @@ class SGEncoding(data.Dataset):
     def __init__(self, train_ids, test_ids, sg_data, test_on=False, val_on=False, num_test=5000, num_val=5000):
         super(SGEncoding, self).__init__()
         cap_graph = json.load(open('/data1/vg_capgraphs_anno.json'))
-        vg_dict = json.load(open('/home/kaihua/projects/maskrcnn-benchmark/datasets/vg/VG-SGG-dicts-with-attri.json'))
+        vg_dict = json.load(open('/home/john/projects/maskrcnn-benchmark/datasets/vg/VG-SGG-dicts-with-attri.json'))
         self.img_txt_sg = sg_data
         self.key_list = list(self.img_txt_sg.keys())
         self.key_list.sort()
