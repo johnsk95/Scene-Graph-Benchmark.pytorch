@@ -239,6 +239,7 @@ def make_data_loader(cfg, mode='train', is_distributed=False, start_iter=0):
             custom_data_info['idx_to_files'] = dataset.custom_files
             custom_data_info['ind_to_classes'] = dataset.ind_to_classes
             custom_data_info['ind_to_predicates'] = dataset.ind_to_predicates
+            custom_data_info['ind_to_attributes'] = dataset.ind_to_attributes
 
             if not os.path.exists(cfg.DETECTED_SGG_DIR):
                 os.makedirs(cfg.DETECTED_SGG_DIR)
