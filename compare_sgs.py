@@ -206,11 +206,24 @@ else:
                 if len(pred_obj_match) == 1:
                     ask_list.append(pred_obj_match[0])
                     ask_questions(i)
-                else:
-                    # ask triplet with most similar pred
-                    max_score_idx = np.argmax(sim_scores)
-                    ask_list.append(obj_matching_edges[max_score_idx])
+                elif len(pred_obj_match) > 1:
+                    # if there are multiple objects with similar pred
+                    # return one with most similar sub
+                    sim_sub = []
+                    sub_sim_scores = []
+                    for cand_sub in pred_obj_match:
+                        sim_score = compare_name(leaf_edge.sub, cand_sub.sub)
+                        sub_sim_scores.append(sim_score)
+                    sub_max_score_idx = np.argmax(sub_sim_scores)
+                    ask_list.append(pred_obj_match[sub_max_score_idx])
                     ask_questions(i)
+                # This part not needed
+                # else:
+                #     # ask triplet with most similar pred
+                #     #max_score_idx = np.argmax(sim_scores)
+                #     #ask_list.append(obj_matching_edges[max_score_idx])
+                #     ask_list.extend(pred_obj_match)
+                #     ask_questions(i)
         # no matching edge with object match
         else:
             if i < len(leaf_edges)-1:
