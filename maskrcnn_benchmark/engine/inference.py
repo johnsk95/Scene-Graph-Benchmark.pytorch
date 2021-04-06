@@ -204,7 +204,10 @@ def custom_sgg_post_precessing(predictions):
         bbox_attrs = []
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         #bbox_features = [] 
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
 =======
 >>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
 =======
@@ -216,7 +219,10 @@ def custom_sgg_post_precessing(predictions):
             bbox_attrs.append(boxlist.get_field('pred_attributes')[i].tolist())
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             #bbox_features.append(boxlist.get_field('pred_features')[i].tolist())
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
 =======
 >>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
 =======
@@ -227,7 +233,10 @@ def custom_sgg_post_precessing(predictions):
         current_dict['bbox_attrs'] = bbox_attrs
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         #current_dict['bbox_features'] = bbox_features
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
 =======
 >>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
 =======
