@@ -19,6 +19,7 @@ datasets/vg/
 *.png
 *.jpg
 *.jpeg
+*.json
 
 # Editor temporaries
 *.swn

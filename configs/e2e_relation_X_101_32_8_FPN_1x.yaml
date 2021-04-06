@@ -14,7 +14,7 @@ MODEL:
     NUM_GROUPS: 32
     WIDTH_PER_GROUP: 8
   RELATION_ON: True
-  ATTRIBUTE_ON: False
+  ATTRIBUTE_ON: True
   FLIP_AUG: False            # if there is any left-right relation, FLIP AUG should be false
   RPN:
     USE_FPN: True

@@ -48,7 +48,7 @@ def compute_on_dataset(model, data_loader, device, synchronize_gather=True, time
                 {img_id: result for img_id, result in zip(image_ids, output)}
             )
     torch.cuda.empty_cache()
-    return results_dict
+    return results_dict # this is predictions
 
 
 def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu, synchronize_gather=True):
@@ -142,6 +142,39 @@ def inference(
         expected_results_sigma_tol=expected_results_sigma_tol,
     )
 
+    # vocab_file = json.load(open('./datasets/vg/VG-SGG-dicts-with-attri.json'))
+    # idx2label = vocab_file['idx_to_label'] # label is object，size 150
+    # idx2pred = vocab_file['idx_to_predicate'] # predicate is relation，size 50 
+    # idx2attr = vocab_file['idx_to_attribute'] # attribute， size 200
+
+    # def get_info(prediction):
+    #     ## get obj
+    #     pred_obj = [idx2label[str(i)] for i in prediction.get_field('pred_labels').tolist()] # obj index to label
+
+    #     ## get relation
+    #     pred_rel_label = prediction.get_field('pred_rel_scores') #  relation score, shape of (nbr_predition, 51)
+    #     pred_rel_label[:,0] = 0 # （nbr_predition, 0) 
+    #     pred_rel_score, pred_rel_label = pred_rel_label.max(-1) # pred_rel_score -> score，pred_rel_label -> max index position
+
+    #     ## concate obj - rela - obj
+    #     pred_rel_pair = prediction.get_field('rel_pair_idxs').tolist() # obj1 * obj2 matrix
+    #     pred_rels = [(pred_obj[i[0]], idx2pred[str(j)], pred_obj[i[1]]) for i, j in
+    #                 zip(pred_rel_pair, pred_rel_label.tolist())] # concate to  obj1-rela-obj2 triplets
+
+    #     ## get attribute
+    #     pred_attr = prediction.get_field('pred_attributes').to(torch.float32) # gey attributes score, shape of (nbr_predition, 201)
+    #     pred_attr[:,0] = 0 # （nbr_predition, 0) 
+    #     pred_attr_score, pred_attr_index = pred_attr.max(-1) # 
+    #     pred_attr_label = [idx2attr[str(i)] for i in pred_attr_index.tolist()] # 
+
+    #     ## concate obj - attr
+    #     pred_obj_attr = [(obj, attr) for obj, attr in zip(pred_obj, pred_attr_label)] # obj-attr
+
+    #     return pred_rels, pred_obj, pred_obj_attr, pred_rel_score, pred_rel_label
+
+    # print('predicting attributes!')
+    # rels, obj, attr, score, label = get_info(predictions)
+
     if cfg.TEST.CUSTUM_EVAL:
         detected_sgg = custom_sgg_post_precessing(predictions)
         with open(os.path.join(cfg.DETECTED_SGG_DIR, 'custom_prediction.json'), 'w') as outfile:  
@@ -156,8 +189,6 @@ def inference(
                     logger=logger,
                     **extra_args)
 
-
-
 def custom_sgg_post_precessing(predictions):
     output_dict = {}
     for idx, boxlist in enumerate(predictions):
@@ -170,13 +201,37 @@ def custom_sgg_post_precessing(predictions):
         bbox = []
         bbox_labels = []
         bbox_scores = []
+        bbox_attrs = []
+<<<<<<< HEAD
+<<<<<<< HEAD
+        #bbox_features = [] 
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
         for i in sortedid:
             bbox.append(xyxy_bbox[i].tolist())
             bbox_labels.append(boxlist.get_field('pred_labels')[i].item())
             bbox_scores.append(boxlist.get_field('pred_scores')[i].item())
+            bbox_attrs.append(boxlist.get_field('pred_attributes')[i].tolist())
+<<<<<<< HEAD
+<<<<<<< HEAD
+            #bbox_features.append(boxlist.get_field('pred_features')[i].tolist())
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
         current_dict['bbox'] = bbox
         current_dict['bbox_labels'] = bbox_labels
         current_dict['bbox_scores'] = bbox_scores
+        current_dict['bbox_attrs'] = bbox_attrs
+<<<<<<< HEAD
+<<<<<<< HEAD
+        #current_dict['bbox_features'] = bbox_features
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
+=======
+>>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
         # sorted relationships
         rel_sortedid, _ = get_sorted_bbox_mapping(boxlist.get_field('pred_rel_scores')[:,1:].max(1)[0].tolist())
         # sorted rel
