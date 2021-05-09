@@ -7,7 +7,7 @@ import numpy as np
 model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
-lang_nodes, lang_edges = LSG.create_graph('lang_sg_result_2.json')
+lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
 img_nodes, img_edges = ISG.create_graph('custom_prediction.json', 'custom_data_info.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
@@ -66,26 +66,33 @@ def ask_questions(curr_leaf_idx):
     global lang_edges
     global ask_list
     global cand_list
-    for idx, ask in enumerate(ask_list):
-        # list options to human
-        print(idx, ask.get_triplet())
-        # accept human input
-    feedback_idx = input("which one?")
-    selected_edge = ask_list[int(feedback_idx)]
-    # if selected edge is the root edge
-    if isempty(leaf_edges[curr_leaf_idx].sub.parent):
-        # insert the edge in the candidate list
-        cand_list.append(selected_edge)
-    # if edge has parent edge
+    if len(ask_list) == 1:
+        print(ask_list[0].get_triplet())
+        feedback = input("is this right?(y/n) ")
+        if feedback == 'y':
+            cand_list.append(ask_list[0])
     else:
-        parent_edge = find_edge(leaf_edges[curr_leaf_idx].sub, lang_edges)
-        # next edge to be looked into should be the parent
-        leaf_edges.insert(curr_leaf_idx+1, parent_edge)
+        for idx, ask in enumerate(ask_list):
+            # list options to human
+            print(idx, ask.get_triplet())
+            # accept human input
+        feedback_idx = input("which one? ")
+        selected_edge = ask_list[int(feedback_idx)]
+        # if selected edge is the root edge
+        if isempty(leaf_edges[curr_leaf_idx].sub.parent):
+            # insert the edge in the candidate list
+            cand_list.append(selected_edge)
+        # if edge has parent edge
+        else:
+            parent_edge = find_edge(leaf_edges[curr_leaf_idx].sub, lang_edges)
+            # next edge to be looked into should be the parent
+            leaf_edges.insert(curr_leaf_idx+1, parent_edge)
     # empty ask_list
     ask_list = []
 
 # when no edge is formed in LSG
 if isempty(leaf_edges):
+    print('no edge formed')
     # ex. give me the cup (only contains subject)
     # find all edges containing root node in ISG
     vref = lang_nodes[0]
@@ -117,6 +124,7 @@ else:
                 obj_matching_edges.append(img_edge)
         # One edge with same object match
         if len(obj_matching_edges) == 1:
+            print('one obj match')
             # Check if sub also matches
             img_edge = obj_matching_edges[0]
             if compare_name(leaf_edge.sub, img_edge.sub) > 0.8:
@@ -136,6 +144,7 @@ else:
                 ask_questions(i)
         # multiple edges with object match
         elif len(obj_matching_edges) > 1:
+            print('mult obj match')
             sub_match = []
             # look at the subject of the edges
             for img_edge in obj_matching_edges:
@@ -144,15 +153,18 @@ else:
                     sub_match.append(img_edge)
             # One match sub
             if len(sub_match) == 1:
+                print('mult obj, one sub match')
                 # matching pred
                 if compare_rels(sub_match[0], leaf_edge) > 0.8:
                     ground_or_leaf(leaf_edge, sub_match[0])
                 # if no matching pred
                 else:
-                    ask_list.append(img_edge)
+                    print('mult obj, one sub match, no pred match')
+                    ask_list.append(sub_match[0])
                     ask_questions(i)
             # multiple subject matches
             elif len(sub_match) > 1:
+                print('mult obj, mult sub match')
                 sub_pred_match = []
                 # match pred of each edge
                 for sub_edge in sub_match:
@@ -160,9 +172,11 @@ else:
                         sub_pred_match.append(sub_edge)
                 # one pred match
                 if len(sub_pred_match) == 1:
+                    print('mult obj, mult sub match, one pred match')
                     ground_or_leaf(leaf_edge, sub_pred_match[0])
                 # multiple pred match
                 elif len(sub_pred_match) > 1:
+                    print('mult obj, mult sub match, mult pred match')
                     attr_match = sub_pred_match.copy()
                     # match subject attribute
                     for sub_pred_edge in attr_match:
@@ -184,6 +198,7 @@ else:
                         ask_questions(i)
                 # no pred match
                 else:
+                    print('mult obj, mult sub match, no pred match')
                     # choose most similar predicate and ask
                     sim_scores = []
                     for sub_edge in sub_match:
@@ -196,6 +211,7 @@ else:
                     ask_questions(i)
             # no matching sub
             else:
+                print('mult obj, no sub match')
                 pred_obj_match = []
                 sim_scores = []
                 for obj_matching_edge in obj_matching_edges:
@@ -204,9 +220,12 @@ else:
                         pred_obj_match.append(obj_matching_edge)
                     sim_scores.append(sim_score)
                 if len(pred_obj_match) == 1:
+                    print('mult obj, no sub match, one pred match')
                     ask_list.append(pred_obj_match[0])
                     ask_questions(i)
-                elif len(pred_obj_match) > 1:
+                else:
+                # elif len(pred_obj_match) > 1:
+                    print('mult obj, no sub match, mult or no pred match')
                     # if there are multiple objects with similar pred
                     # return one with most similar sub
                     sim_sub = []
@@ -214,8 +233,10 @@ else:
                     for cand_sub in pred_obj_match:
                         sim_score = compare_name(leaf_edge.sub, cand_sub.sub)
                         sub_sim_scores.append(sim_score)
+                        sim_sub.append(cand_sub.sub.name)
                     sub_max_score_idx = np.argmax(sub_sim_scores)
                     ask_list.append(pred_obj_match[sub_max_score_idx])
+                    # ask_list.extend(pred_obj_match)
                     ask_questions(i)
                 # This part not needed
                 # else:
@@ -226,6 +247,7 @@ else:
                 #     ask_questions(i)
         # no matching edge with object match
         else:
+            print('no obj match')
             if i < len(leaf_edges)-1:
                 # pass if additional leaf nodes exist
                 pass
@@ -234,7 +256,7 @@ else:
                 lang_root_edges = LSG.find_edges_with_root(lang_edges)
                 # find all edges containing root node in ISG
                 img_root_edges = []
-                vref = lang_root_edge[0].sub
+                vref = lang_root_edges[0].sub
                 for img_edge in img_edges:
                     if compare_name(vref, img_edge.sub) > 0.8:
                         img_root_edges.append(img_edge)
@@ -259,11 +281,11 @@ if not isempty(cand_list):
     else:
         # multiple candidates
         # ask unique relation of each node
-        edges = []
-        for cand_edge in cand_list:
-            edges.append(cand_edge.get_triplet())
-        print('multiple candidates')
-        print(edges)
+        for i, cand_edge in enumerate(cand_list):
+            print(str(i) + ' ' + cand_edge.get_triplet())
+        idx = int(input('which one? '))
+        print('grounding achieved!')
+        print(cand_list[idx].get_triplet())
 else:
     # no grounding, ask again
     print('ask again (no grounding)')
