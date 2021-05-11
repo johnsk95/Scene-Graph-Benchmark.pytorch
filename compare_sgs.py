@@ -2,6 +2,7 @@ import imgSG_json_to_graph as ISG
 import langSG_json_to_graph as LSG
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
+from collections import defaultdict
 
 # word embedding model
 model = SentenceTransformer('stsb-roberta-base')
@@ -66,32 +67,83 @@ def ask_questions(curr_leaf_idx):
     global lang_edges
     global ask_list
     global cand_list
-    if len(ask_list) == 1:
+    print('ask questions')
+    if len(ask_list) == 0:
+        print('ask list empty: no grounding')
+    elif len(ask_list) == 1:
         print(ask_list[0].get_triplet())
         feedback = input("is this right?(y/n) ")
         if feedback == 'y':
             cand_list.append(ask_list[0])
     else:
-        for idx, ask in enumerate(ask_list):
-            # list options to human
-            print(idx, ask.get_triplet())
-            # accept human input
-        feedback_idx = input("which one? ")
-        selected_edge = ask_list[int(feedback_idx)]
-        # if selected edge is the root edge
-        if isempty(leaf_edges[curr_leaf_idx].sub.parent):
-            # insert the edge in the candidate list
-            cand_list.append(selected_edge)
-        # if edge has parent edge
-        else:
-            parent_edge = find_edge(leaf_edges[curr_leaf_idx].sub, lang_edges)
-            # next edge to be looked into should be the parent
-            leaf_edges.insert(curr_leaf_idx+1, parent_edge)
+        samedic = defaultdict(list)
+        strings = []
+        for img_edge in ask_list:
+            strings.append(img_edge.get_triplet())
+        # construct dict of duplicate triplets
+        for i, triplet in enumerate(strings):
+            samedic[triplet].append(i)
+        feedback_yn = None
+        for items in samedic:
+            # check for same triplets
+            if len(samedic[items]) > 1:
+                # draw bounding box on each sub node
+                for idx in samedic[items]:
+                    node_id = ask_list[idx].sub.get_node_id()
+                    feedback_yn = input(f'Is it this item? {node_id}: ')
+                    if feedback_yn == 'y':
+                        cand_list.append(ask_list[idx])
+                        break
+                if feedback_yn == 'y':
+                    break
+        if feedback_yn != 'y':
+            for idx, ask in enumerate(ask_list):
+                # list options to human
+                print(idx, ask.get_triplet())
+                # accept human input
+            feedback_idx = input("which one? ")
+            selected_edge = ask_list[int(feedback_idx)]
+            # if selected edge is the root edge
+            if isempty(leaf_edges[curr_leaf_idx].sub.parent):
+                # insert the edge in the candidate list
+                cand_list.append(selected_edge)
+            # if edge has parent edge
+            else:
+                parent_edge = find_edge(leaf_edges[curr_leaf_idx].sub, lang_edges)
+                # next edge to be looked into should be the parent
+                leaf_edges.insert(curr_leaf_idx+1, parent_edge)
     # empty ask_list
     ask_list = []
 
+def ask_with_image(edges):
+    global cand_list
+    samedic = defaultdict(list)
+    strings = []
+    for img_edge in edges:
+        strings.append(img_edge.get_triplet())
+    # construct dict of duplicate triplets
+    for i, triplet in enumerate(strings):
+        samedic[triplet].append(i)
+
+    for items in samedic:
+        if len(samedic[items]) > 1:
+            # draw bounding box on each sub node
+            feedback_yn = None
+            for idx in samedic[items]:
+                node_id = edges[idx].sub.get_node_id()
+                feedback_yn = input(f'Is it this item? {node_id}: ')
+                if feedback_yn == 'y':
+                    cand_list.append(edges[idx])
+                    break
+            if feedback_yn == 'y':   
+                break
+        else:
+            ask_list.append(edges[samedic[items][0]])
+            
+
 # when no edge is formed in LSG
 if isempty(leaf_edges):
+    print()
     print('no edge formed')
     # ex. give me the cup (only contains subject)
     # find all edges containing root node in ISG
@@ -101,14 +153,51 @@ if isempty(leaf_edges):
         if compare_name(vref, img_edge.sub) > 0.8:
             img_root_edges.append(img_edge)
     # match attribute
-    for img_root_edge in img_root_edges:
+    for img_root_edge in img_root_edges.copy():
         if vref.attr is not None:
             # remove img edges with subject attr not matching
             if compare_attr(vref, img_root_edge.sub) < 0.8:
                 img_root_edges.remove(img_root_edge)
     #print(img_root_edges)
     if not isempty(img_root_edges):
-        cand_list = img_root_edges
+        filtered_img_edges = []
+        # compare node id of candidate edges
+        checked_ids = []
+        for img_edge in img_root_edges:
+            sub_id = img_edge.sub.get_node_id()
+            # add only one edge from each object id
+            if sub_id not in checked_ids:
+                checked_ids.append(sub_id)
+                # cand_list.append(img_edge)
+                filtered_img_edges.append(img_edge)
+        # cand_list = img_root_edges
+        ####################################################
+        # compare triplet strings
+        # create dict containing indices of same items
+        samedic = defaultdict(list)
+        strings = []
+        for img_edge in filtered_img_edges:
+            strings.append(img_edge.get_triplet())
+        for i, triplet in enumerate(strings):
+            samedic[triplet].append(i)
+        # ['white plate on wooden table', 'white plate on wooden table', 'white plate near lamp', 'white plate near black cat', 'white plate on wooden table', 'cat']
+        # -> {white plate on wooden table: [0,1,2], white plate near lamp: [3,4]}
+        # goal: extract unique triplet per subject
+        for items in samedic:
+            if len(samedic[items]) > 1:
+                # draw bounding box on each sub node
+                feedback_yn = None
+                for idx in samedic[items]:
+                    node_id = filtered_img_edges[idx].sub.get_node_id()
+                    feedback_yn = input(f'Is it this item? {node_id}: ')
+                    if feedback_yn == 'y':
+                        cand_list.append(filtered_img_edges[idx])
+                        break
+                if feedback_yn == 'y':   
+                    break
+            else:
+                cand_list.append(filtered_img_edges[samedic[items][0]])
+        #####################################################
     else:
         print('no ', vref.get_name())
     #print(cand_list)
@@ -179,20 +268,25 @@ else:
                     print('mult obj, mult sub match, mult pred match')
                     attr_match = sub_pred_match.copy()
                     # match subject attribute
-                    for sub_pred_edge in attr_match:
-                        if leaf_edge.sub.attr is not None:
-                            if compare_attr(leaf_edge.sub, sub_pred_edge.sub) < 0.8:
+                    for sub_pred_edge in sub_pred_match:
+                        if leaf_edge.obj.attr is not None:
+                            # print(leaf_edge.obj.get_attr())
+                            # compare object attributes
+                            if compare_attr(leaf_edge.obj, sub_pred_edge.obj) < 0.8:
                                 attr_match.remove(sub_pred_edge)
                     # One matching attribute
                     if len(attr_match) == 1:
+                        print('mult obj, mult sub, mult pred, one attr match')
                         ask_list.append(attr_match[0])
                         ask_questions(i)
                     # multiple matching attribute
                     elif len(attr_match) > 1:
+                        print('mult obj, mult sub, mult pred, mult attr match')
                         ask_list.extend(attr_match)
                         ask_questions(i)
                     # no matching attribute
                     else:
+                        print('mult obj, mult sub, mult pred, no attr match')
                         # ask all in spo match list (this, this, ...)
                         ask_list.extend(sub_pred_match)
                         ask_questions(i)
@@ -223,8 +317,8 @@ else:
                     print('mult obj, no sub match, one pred match')
                     ask_list.append(pred_obj_match[0])
                     ask_questions(i)
-                else:
-                # elif len(pred_obj_match) > 1:
+                # else:
+                elif len(pred_obj_match) > 1:
                     print('mult obj, no sub match, mult or no pred match')
                     # if there are multiple objects with similar pred
                     # return one with most similar sub
@@ -234,9 +328,13 @@ else:
                         sim_score = compare_name(leaf_edge.sub, cand_sub.sub)
                         sub_sim_scores.append(sim_score)
                         sim_sub.append(cand_sub.sub.name)
+                    print('pred_obj_match: ', pred_obj_match)
                     sub_max_score_idx = np.argmax(sub_sim_scores)
                     ask_list.append(pred_obj_match[sub_max_score_idx])
                     # ask_list.extend(pred_obj_match)
+                    ask_questions(i)
+                else:
+                    ask_list.extend(obj_matching_edges)
                     ask_questions(i)
                 # This part not needed
                 # else:
@@ -254,24 +352,32 @@ else:
             else:
                 # get root node from LSG
                 lang_root_edges = LSG.find_edges_with_root(lang_edges)
+                # match subject
                 # find all edges containing root node in ISG
                 img_root_edges = []
                 vref = lang_root_edges[0].sub
                 for img_edge in img_edges:
                     if compare_name(vref, img_edge.sub) > 0.8:
+                        # edges in ISG that contain vref node (subject)
                         img_root_edges.append(img_edge)
-                # match attributes
-                for lang_root_edge in lang_root_edges:
-                        for img_root_edge in img_root_edges:
-                            if lang_root_edge.sub.attr is not None:
-                                if compare_attr(lang_root_edge.sub, img_root_edge.sub) < 0.8:
+                if len(img_root_edges) > 0:
+                    print('no obj, one or more sub matches')
+                    # match attributes
+                    for lang_root_edge in lang_root_edges:
+                            for img_root_edge in img_root_edges.copy():
+                                if lang_root_edge.sub.attr is not None:
+                                    # remove edges with mismatching attributes
+                                    if compare_attr(lang_root_edge.sub, img_root_edge.sub) < 0.8:
+                                        img_root_edges.remove(img_root_edge)
+                                # compare predicates
+                                # remove edges with mismatching predicates
+                                if compare_rels(lang_root_edge, img_root_edge) < 0.8:
                                     img_root_edges.remove(img_root_edge)
-                            # compare predicates
-                            if compare_rels(lang_root_edge, img_root_edge) < 0.8:
-                                img_root_edges.remove(img_root_edge)
-                # ask filtered edges
-                ask_list.extend(img_root_edges)
-                ask_questions(i)
+                    # ask filtered edges
+                    ask_list.extend(img_root_edges)
+                    ask_questions(i)
+                else:
+                    print('no obj, no sub match')
 
 if not isempty(cand_list):
     if len(cand_list) == 1:
@@ -279,6 +385,7 @@ if not isempty(cand_list):
         print('grounding achieved!')
         print(cand_list[0].get_triplet())
     else:
+        print('ask candidates')
         # multiple candidates
         # ask unique relation of each node
         for i, cand_edge in enumerate(cand_list):
