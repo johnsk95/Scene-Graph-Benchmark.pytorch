@@ -3,13 +3,14 @@ import langSG_json_to_graph as LSG
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
 from collections import defaultdict
+from PIL import Image, ImageDraw
 
 # word embedding model
 model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
 lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
-img_nodes, img_edges = ISG.create_graph('custom_prediction.json', 'custom_data_info.json')
+img_nodes, img_edges, boxes, image_path = ISG.create_graph('custom_prediction.json', 'custom_data_info.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
 # candidate list
@@ -89,8 +90,8 @@ def ask_questions(curr_leaf_idx):
             if len(samedic[items]) > 1:
                 # draw bounding box on each sub node
                 for idx in samedic[items]:
-                    node_id = ask_list[idx].sub.get_node_id()
-                    feedback_yn = input(f'Is it this item? {node_id}: ')
+                    display_bbox(ask_list[idx].sub)
+                    feedback_yn = input(f'Is it this item? ')
                     if feedback_yn == 'y':
                         cand_list.append(ask_list[idx])
                         break
@@ -130,8 +131,8 @@ def ask_with_image(edges):
             # draw bounding box on each sub node
             feedback_yn = None
             for idx in samedic[items]:
-                node_id = edges[idx].sub.get_node_id()
-                feedback_yn = input(f'Is it this item? {node_id}: ')
+                display_bbox(edges[idx].sub)
+                feedback_yn = input('Is it this item? ')
                 if feedback_yn == 'y':
                     cand_list.append(edges[idx])
                     break
@@ -139,11 +140,38 @@ def ask_with_image(edges):
                 break
         else:
             ask_list.append(edges[samedic[items][0]])
-            
+
+def get_size(image_size):
+    min_size = 600
+    max_size = 1000
+    w, h = image_size
+    size = min_size
+    if max_size is not None:
+        min_original_size = float(min((w, h)))
+        max_original_size = float(max((w, h)))
+        if max_original_size / min_original_size * size > max_size:
+            size = int(round(max_size * min_original_size / max_original_size))
+    if (w <= h and w == size) or (h <= w and h == size):
+        return (w, h)
+    if w < h:
+        ow = size
+        oh = int(size * h / w)
+    else:
+        oh = size
+        ow = int(size * w / h)
+    return (ow, oh)
+
+def display_bbox(node):
+    size = get_size(Image.open(image_path).size)
+    pic = Image.open(image_path).resize(size)
+    draw = ImageDraw.Draw(pic)
+    bbox = boxes[node.get_node_id()]
+    x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+    draw.rectangle(((x1, y1), (x2, y2)), outline='red')
+    pic.show()
 
 # when no edge is formed in LSG
 if isempty(leaf_edges):
-    print()
     print('no edge formed')
     # ex. give me the cup (only contains subject)
     # find all edges containing root node in ISG
@@ -188,8 +216,8 @@ if isempty(leaf_edges):
                 # draw bounding box on each sub node
                 feedback_yn = None
                 for idx in samedic[items]:
-                    node_id = filtered_img_edges[idx].sub.get_node_id()
-                    feedback_yn = input(f'Is it this item? {node_id}: ')
+                    display_bbox(filtered_img_edges[idx].sub)
+                    feedback_yn = input('Is it this item? ')
                     if feedback_yn == 'y':
                         cand_list.append(filtered_img_edges[idx])
                         break
@@ -384,6 +412,7 @@ if not isempty(cand_list):
         # achieved grounding
         print('grounding achieved!')
         print(cand_list[0].get_triplet())
+        display_bbox(cand_list[0].sub)
     else:
         print('ask candidates')
         # multiple candidates
@@ -396,5 +425,4 @@ if not isempty(cand_list):
 else:
     # no grounding, ask again
     print('ask again (no grounding)')
-                
-
+            

@@ -82,8 +82,8 @@ def create_graph(pred, data):
     ind_to_predicates = custom_data_info['ind_to_predicates']
     ind_to_attributes = custom_data_info['ind_to_attributes']
 
-    #image_path = custom_data_info['idx_to_files'][image_idx]
-    #boxes = custom_prediction[str(image_idx)]['bbox'][:box_topk]
+    image_path = custom_data_info['idx_to_files'][image_idx]
+    boxes = custom_prediction[str(image_idx)]['bbox'][:box_topk]
     box_labels = custom_prediction[str(image_idx)]['bbox_labels'][:box_topk]
     box_scores = custom_prediction[str(image_idx)]['bbox_scores'][:box_topk]
     box_attrs = custom_prediction[str(image_idx)]['bbox_attrs'][:box_topk]
@@ -139,4 +139,4 @@ def create_graph(pred, data):
             edges.append(Edge(sub_node, rel, obj_node))
     edges = edges[:rel_topk]
 
-    return nodes, edges
+    return nodes, edges, boxes, image_path

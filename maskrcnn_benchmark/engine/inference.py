@@ -202,45 +202,19 @@ def custom_sgg_post_precessing(predictions):
         bbox_labels = []
         bbox_scores = []
         bbox_attrs = []
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         #bbox_features = [] 
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
+
         for i in sortedid:
             bbox.append(xyxy_bbox[i].tolist())
             bbox_labels.append(boxlist.get_field('pred_labels')[i].item())
             bbox_scores.append(boxlist.get_field('pred_scores')[i].item())
             bbox_attrs.append(boxlist.get_field('pred_attributes')[i].tolist())
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
             #bbox_features.append(boxlist.get_field('pred_features')[i].tolist())
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
         current_dict['bbox'] = bbox
         current_dict['bbox_labels'] = bbox_labels
         current_dict['bbox_scores'] = bbox_scores
         current_dict['bbox_attrs'] = bbox_attrs
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         #current_dict['bbox_features'] = bbox_features
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
-=======
->>>>>>> 833fbf500572287278ff2787c021f7ca99a4587f
         # sorted relationships
         rel_sortedid, _ = get_sorted_bbox_mapping(boxlist.get_field('pred_rel_scores')[:,1:].max(1)[0].tolist())
         # sorted rel
