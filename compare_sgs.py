@@ -83,7 +83,7 @@ def ask_questions(curr_leaf_idx):
             strings.append(img_edge.get_triplet())
         # construct dict of duplicate triplets
         for i, triplet in enumerate(strings):
-            samedic[triplet].append(i)
+            samedic[triplet].append(ask_list[i].sub.get_id())
         feedback_yn = None
         for items in samedic:
             # check for same triplets
