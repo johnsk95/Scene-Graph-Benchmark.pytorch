@@ -82,15 +82,42 @@ def find_unique(cand_list):
     # input = [7,5,4,3,8]
     global img_edges
     # for each candidate find all edges that contains candidate as subject node
-    cand_contain_edges = []
+    edges_contain_cand = []
     for cand in cand_list:
         temp_edges = []
         for edge in img_edges:
             if cand == edge.sub:
                 temp_edges.append(edge)
-        cand_contain_edges.append(temp_edges)
+        edges_contain_cand.append(temp_edges)
     # at this point [[edges that contain 7],[edges that contain 5],...]
-    
+    # to count occurences of the edges, we need to change the edge -> string
+    # ex) 7(plate) in front of 9(table) -> plate in front of table
+    str_edges_contain_cand = []
+    for edge_list in str_edges_contain_cand:
+        temp_str_edges = []
+        for edge in edge_list:
+            str_edge = edge.get_triplet()
+            temp_str_edges.append(str_edge)
+        str_edges_contain_cand.append(temp_str_edges)
+    # count occurrences of the edges
+    # convert str_edges_contain_cand to list of dictionaries
+    # ex) [[{white plate in front of table: 3},{},{}], [{}], [{}]]
+    flat_list = [item for sublist in str_edges_contain_cand for item in sublist]
+    cnt_str_edges_contain_cand = []
+    for edge_list in str_edges_contain_cand:
+        freq = {}
+        for edge in edge_list:
+            freq[edge] = flat_list.count(edge)
+        cnt_str_edges_contain_cand.append(freq)
+    # now we have this form [[{white plate in front of table: 3},{},{}], [{}], [{}]]
+    # for each dict, pick key with smallest value for each list
+    # min(dict, key=d.get)
+
+
+
+        
+
+
             
 
 
