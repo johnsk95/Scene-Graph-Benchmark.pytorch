@@ -63,6 +63,39 @@ def find_edge(currNode, edges):
             return edge
     return None
 
+def find_unique(cand_list):
+    """If subject is grounded find unique relation for that subject to present to the user.
+    If subject is not grounded and we have subject candidates, find unique relation for 
+    each of them and ask them back to the user.
+    regardless, this function should find unique relation for the subject node/s"""
+    # ex) {'white plate on wooden table': [7,5,4,3,8]}
+    # ex) {'white plate on wooden table across the chair'}
+    # cand_list = [[7,5,4,3,8], [4,3,8], [3,8]] => [3,8] => find unique => ask
+    # if multiple components in reduced cand list --> find unique edges for each subject node
+    # merge first and if nothing exists make set and find unique
+    # subject not exist in image --> no matching subjects in cand lists found
+    # then we know the subject nodes that appears in 'white plate on wooden table'
+    # given these candidates:
+    # 1. find edges that contain [7,5,4,3,8] as subjects
+    # 2. 
+    # create dictionary that contains list of edges that contains subNode as subject
+    # input = [7,5,4,3,8]
+    global img_edges
+    # for each candidate find all edges that contains candidate as subject node
+    cand_contain_edges = []
+    for cand in cand_list:
+        temp_edges = []
+        for edge in img_edges:
+            if cand == edge.sub:
+                temp_edges.append(edge)
+        cand_contain_edges.append(temp_edges)
+    # at this point [[edges that contain 7],[edges that contain 5],...]
+    
+            
+
+
+    return None
+
 def ask_questions(curr_leaf_idx):
     global leaf_edges
     global lang_edges
@@ -83,7 +116,8 @@ def ask_questions(curr_leaf_idx):
             strings.append(img_edge.get_triplet())
         # construct dict of duplicate triplets
         for i, triplet in enumerate(strings):
-            samedic[triplet].append(ask_list[i].sub.get_id())
+            samedic[triplet].append(ask_list[i].sub.get_node_id())
+        print(samedic)
         feedback_yn = None
         for items in samedic:
             # check for same triplets
@@ -233,6 +267,8 @@ else:
     # "black cat on wooden table"
     # "white plate on wooden table"
     for i, leaf_edge in enumerate(leaf_edges):
+        # temp
+        # temp_cand_list = []
         # Object matching (lang -> image)
         obj_matching_edges = []
         for img_edge in img_edges:
@@ -364,13 +400,6 @@ else:
                 else:
                     ask_list.extend(obj_matching_edges)
                     ask_questions(i)
-                # This part not needed
-                # else:
-                #     # ask triplet with most similar pred
-                #     #max_score_idx = np.argmax(sim_scores)
-                #     #ask_list.append(obj_matching_edges[max_score_idx])
-                #     ask_list.extend(pred_obj_match)
-                #     ask_questions(i)
         # no matching edge with object match
         else:
             print('no obj match')
