@@ -101,7 +101,7 @@ def find_unique(cand_list):
         str_edges_contain_cand.append(temp_str_edges)
     # count occurrences of the edges
     # convert str_edges_contain_cand to list of dictionaries
-    # ex) [[{white plate in front of table: 3},{},{}], [{}], [{}]]
+    # ex) [{white plate in front of table: 3, ...}, {}, {}]
     flat_list = [item for sublist in str_edges_contain_cand for item in sublist]
     cnt_str_edges_contain_cand = []
     for edge_list in str_edges_contain_cand:
@@ -112,16 +112,11 @@ def find_unique(cand_list):
     # now we have this form [[{white plate in front of table: 3},{},{}], [{}], [{}]]
     # for each dict, pick key with smallest value for each list
     # min(dict, key=d.get)
-
-
-
-        
-
-
-            
-
-
-    return None
+    return_list = []
+    for dict in str_edges_contain_cand:
+        min_occurred = min(dict.keys(), key=(lambda k: dict[k]))
+        return_list.append(min_occurred)
+    return return_list
 
 def ask_questions(curr_leaf_idx):
     global leaf_edges
