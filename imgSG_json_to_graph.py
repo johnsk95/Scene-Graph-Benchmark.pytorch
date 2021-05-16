@@ -85,10 +85,10 @@ def create_graph(pred, data):
     image_path = custom_data_info['idx_to_files'][image_idx]
     boxes = custom_prediction[str(image_idx)]['bbox'][:box_topk]
     box_labels = custom_prediction[str(image_idx)]['bbox_labels'][:box_topk]
-    box_scores = custom_prediction[str(image_idx)]['bbox_scores'][:box_topk]
+    # box_scores = custom_prediction[str(image_idx)]['bbox_scores'][:box_topk]
     box_attrs = custom_prediction[str(image_idx)]['bbox_attrs'][:box_topk]
     all_rel_labels = custom_prediction[str(image_idx)]['rel_labels']
-    all_rel_scores = custom_prediction[str(image_idx)]['rel_scores']
+    # all_rel_scores = custom_prediction[str(image_idx)]['rel_scores']
     all_rel_pairs = custom_prediction[str(image_idx)]['rel_pairs']
 
     # box labels

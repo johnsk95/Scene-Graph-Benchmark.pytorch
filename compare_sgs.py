@@ -10,7 +10,7 @@ model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
 lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
-img_nodes, img_edges, boxes, image_path = ISG.create_graph('custom_prediction.json', 'custom_data_info.json')
+img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
 # candidate list
@@ -82,8 +82,13 @@ def find_unique(cand_list):
     # input = [7,5,4,3,8]
     global img_edges
     # for each candidate find all edges that contains candidate as subject node
+    # extract subject id from candidate list
+    cand_ids = []
+    for edge in cand_list:
+        cand_ids.append(edge.sub.get_id())
+    
     edges_contain_cand = []
-    for cand in cand_list:
+    for cand in cand_ids:
         temp_edges = []
         for edge in img_edges:
             if cand == edge.sub:
@@ -109,7 +114,7 @@ def find_unique(cand_list):
         for edge in edge_list:
             freq[edge] = flat_list.count(edge)
         cnt_str_edges_contain_cand.append(freq)
-    # now we have this form [[{white plate in front of table: 3},{},{}], [{}], [{}]]
+    # now we have this form [{white plate in front of table: 3, ...}, {}, {}]
     # for each dict, pick key with smallest value for each list
     # min(dict, key=d.get)
     return_list = []
@@ -138,8 +143,8 @@ def ask_questions(curr_leaf_idx):
             strings.append(img_edge.get_triplet())
         # construct dict of duplicate triplets
         for i, triplet in enumerate(strings):
-            samedic[triplet].append(ask_list[i].sub.get_node_id())
-        print(samedic)
+            # samedic[triplet].append(ask_list[i].sub.get_node_id())
+            samedic[triplet].append(i)
         feedback_yn = None
         for items in samedic:
             # check for same triplets
@@ -281,6 +286,8 @@ if isempty(leaf_edges):
                     break
             else:
                 cand_list.append(filtered_img_edges[samedic[items][0]])
+                # test
+
         #####################################################
     else:
         print('no ', vref.get_name())
@@ -468,11 +475,14 @@ if not isempty(cand_list):
         print('ask candidates')
         # multiple candidates
         # ask unique relation of each node
+        #unique_list = find_unique(cand_list)
         for i, cand_edge in enumerate(cand_list):
             print(str(i) + ' ' + cand_edge.get_triplet())
+            #print(cand_edge)
         idx = int(input('which one? '))
         print('grounding achieved!')
         print(cand_list[idx].get_triplet())
+        display_bbox(cand_list[idx].sub)
 else:
     # no grounding, ask again
     print('ask again (no grounding)')
