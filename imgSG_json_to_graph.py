@@ -103,7 +103,8 @@ def create_graph(pred, data):
             idx = np.argsort(box_attrs[i])
             box_attrs[i] = ind_to_attributes[idx[-2]]
         else:
-            box_attrs[i] = ind_to_attributes[np.argmax(box_attrs[i])]
+            # box_attrs[i] = ind_to_attributes[np.argmax(box_attrs[i])]
+            box_attrs[i] = ind_to_attributes[box_attrs[i]]
     #print(box_attrs)
     
     # Relations between the boxes and initializing nodes
@@ -111,7 +112,7 @@ def create_graph(pred, data):
     rel_scores = []
     for i in range(len(all_rel_pairs)):
         if all_rel_pairs[i][0] < box_topk and all_rel_pairs[i][1] < box_topk:
-            rel_scores.append(all_rel_scores[i])
+            #rel_scores.append(all_rel_scores[i])
             label = str(all_rel_pairs[i][0]) + '_' + box_attrs[all_rel_pairs[i][0]] + ' ' + box_labels[all_rel_pairs[i][0]] + ' => ' + ind_to_predicates[all_rel_labels[i]] + ' => ' + str(all_rel_pairs[i][1]) + '_' + box_attrs[all_rel_pairs[i][1]] + ' ' + box_labels[all_rel_pairs[i][1]]
             rel_labels.append(label)
     rel_labels = rel_labels[:rel_topk]

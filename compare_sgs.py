@@ -10,7 +10,7 @@ model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
 lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
-img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info.json')
+img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info_2.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
 # candidate list
@@ -63,7 +63,7 @@ def find_edge(currNode, edges):
             return edge
     return None
 
-def find_unique(cand_list):
+def find_unique(input_list):
     """If subject is grounded find unique relation for that subject to present to the user.
     If subject is not grounded and we have subject candidates, find unique relation for 
     each of them and ask them back to the user.
@@ -83,44 +83,52 @@ def find_unique(cand_list):
     global img_edges
     # for each candidate find all edges that contains candidate as subject node
     # extract subject id from candidate list
+    if isempty(input_list):
+        return input_list
+    
     cand_ids = []
-    for edge in cand_list:
-        cand_ids.append(edge.sub.get_id())
+    for edge in input_list:
+        cand_ids.append(edge.sub.get_node_id())
+    print("cand_id:", cand_ids)
     
     edges_contain_cand = []
     for cand in cand_ids:
         temp_edges = []
         for edge in img_edges:
-            if cand == edge.sub:
+            if cand == edge.sub.get_node_id():
                 temp_edges.append(edge)
         edges_contain_cand.append(temp_edges)
+    print("edges_contain_cand: ", edges_contain_cand)
     # at this point [[edges that contain 7],[edges that contain 5],...]
     # to count occurences of the edges, we need to change the edge -> string
     # ex) 7(plate) in front of 9(table) -> plate in front of table
     str_edges_contain_cand = []
-    for edge_list in str_edges_contain_cand:
+    for edge_list in edges_contain_cand:
         temp_str_edges = []
         for edge in edge_list:
             str_edge = edge.get_triplet()
             temp_str_edges.append(str_edge)
         str_edges_contain_cand.append(temp_str_edges)
+    print("str_edges_contain_cand: ", str_edges_contain_cand)
     # count occurrences of the edges
     # convert str_edges_contain_cand to list of dictionaries
     # ex) [{white plate in front of table: 3, ...}, {}, {}]
     flat_list = [item for sublist in str_edges_contain_cand for item in sublist]
     cnt_str_edges_contain_cand = []
-    for edge_list in str_edges_contain_cand:
+    for edge_list in edges_contain_cand:
         freq = {}
         for edge in edge_list:
-            freq[edge] = flat_list.count(edge)
+            freq[edge] = flat_list.count(edge.get_triplet())
         cnt_str_edges_contain_cand.append(freq)
+    print("cnt_str_edges_contain_cand: ", cnt_str_edges_contain_cand)
     # now we have this form [{white plate in front of table: 3, ...}, {}, {}]
     # for each dict, pick key with smallest value for each list
     # min(dict, key=d.get)
     return_list = []
-    for dict in str_edges_contain_cand:
+    for dict in cnt_str_edges_contain_cand:
         min_occurred = min(dict.keys(), key=(lambda k: dict[k]))
         return_list.append(min_occurred)
+    print("return_list: ", return_list)
     return return_list
 
 def ask_questions(curr_leaf_idx):
@@ -135,45 +143,60 @@ def ask_questions(curr_leaf_idx):
         print(ask_list[0].get_triplet())
         feedback = input("is this right?(y/n) ")
         if feedback == 'y':
+            #cand_list.append(ask_list[0])
             cand_list.append(ask_list[0])
+        #cand_list = find_unique(cand_list)
     else:
-        samedic = defaultdict(list)
-        strings = []
-        for img_edge in ask_list:
-            strings.append(img_edge.get_triplet())
-        # construct dict of duplicate triplets
-        for i, triplet in enumerate(strings):
-            # samedic[triplet].append(ask_list[i].sub.get_node_id())
-            samedic[triplet].append(i)
-        feedback_yn = None
-        for items in samedic:
-            # check for same triplets
-            if len(samedic[items]) > 1:
-                # draw bounding box on each sub node
-                for idx in samedic[items]:
-                    display_bbox(ask_list[idx].sub)
-                    feedback_yn = input(f'Is it this item? ')
-                    if feedback_yn == 'y':
-                        cand_list.append(ask_list[idx])
-                        break
-                if feedback_yn == 'y':
-                    break
-        if feedback_yn != 'y':
-            for idx, ask in enumerate(ask_list):
-                # list options to human
-                print(idx, ask.get_triplet())
-                # accept human input
-            feedback_idx = input("which one? ")
-            selected_edge = ask_list[int(feedback_idx)]
-            # if selected edge is the root edge
-            if isempty(leaf_edges[curr_leaf_idx].sub.parent):
-                # insert the edge in the candidate list
-                cand_list.append(selected_edge)
-            # if edge has parent edge
-            else:
-                parent_edge = find_edge(leaf_edges[curr_leaf_idx].sub, lang_edges)
-                # next edge to be looked into should be the parent
-                leaf_edges.insert(curr_leaf_idx+1, parent_edge)
+        # print(ask_list)
+        # samedic = defaultdict(list)
+        # strings = []
+        # for img_edge in ask_list:
+        #     strings.append(img_edge.get_triplet())
+        # print(strings)
+        # print(find_unique(ask_list))
+        # # construct dict of duplicate triplets
+        # # {triplet: index of edge in ask_list}
+        # for i, triplet in enumerate(strings):
+        #     # samedic[triplet].append(ask_list[i].sub.get_node_id())
+        #     samedic[triplet].append(i)
+        # feedback_yn = None
+        # for items in samedic:
+        #     # check for same triplets
+        #     if len(samedic[items]) > 1:
+        #         # draw bounding box on each sub node
+        #         for idx in samedic[items]:
+        #             display_bbox(ask_list[idx].sub)
+        #             feedback_yn = input(f'Is it this item? ')
+        #             if feedback_yn == 'y':
+        #                 #cand_list.append(ask_list[idx])
+        #                 cand_list.append(find_unique(list(ask_list[idx])))
+        #                 break
+        #         if feedback_yn == 'y':
+        #             break
+        # if feedback_yn != 'y':
+        #     for idx, ask in enumerate(ask_list):
+        #         # list options to human
+        #         print(idx, ask.get_triplet())
+        #         # accept human input
+        #     feedback_idx = input("which one? ")
+        #     selected_edge = ask_list[int(feedback_idx)]
+        #     # if selected edge is the root edge
+        #     if isempty(leaf_edges[curr_leaf_idx].sub.parent):
+        #         # insert the edge in the candidate list
+        #         cand_list.append(find_unique(list(selected_edge)))
+        #     # if edge has parent edge
+        #     else:
+        #         parent_edge = find_edge(leaf_edges[curr_leaf_idx].sub, lang_edges)
+        #         # next edge to be looked into should be the parent
+        #         leaf_edges.insert(curr_leaf_idx+1, parent_edge)
+        unique_list = find_unique(ask_list)
+        print(unique_list)
+        for idx, ask in enumerate(unique_list):
+            # list options
+            print(f'[{idx}] {ask.get_triplet()}')
+        feedback_idx = input("which one? ")
+        selected = ask_list[int(feedback_idx)]
+        cand_list.append(selected)
     # empty ask_list
     ask_list = []
 
