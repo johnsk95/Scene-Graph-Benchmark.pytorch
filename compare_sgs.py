@@ -17,6 +17,8 @@ leaf_edges = LSG.find_edges_with_leaves(lang_edges)
 cand_list = []
 # asking list
 ask_list = []
+# combined cand_list
+comb_cand_list = []
 
 def isempty(a):
     if a:
@@ -259,6 +261,7 @@ if isempty(leaf_edges):
     print('no edge formed')
     # ex. give me the cup (only contains subject)
     # find all edges containing root node in ISG
+    # cup node id: [1,2,3]
     vref = lang_nodes[0]
     img_root_edges = []
     for img_edge in img_edges:
@@ -282,34 +285,37 @@ if isempty(leaf_edges):
                 checked_ids.append(sub_id)
                 # cand_list.append(img_edge)
                 filtered_img_edges.append(img_edge)
+        filtered_img_edges = find_unique(filtered_img_edges)
+        cand_list.extend(filtered_img_edges)
+    ####
         # cand_list = img_root_edges
         ####################################################
         # compare triplet strings
         # create dict containing indices of same items
-        samedic = defaultdict(list)
-        strings = []
-        for img_edge in filtered_img_edges:
-            strings.append(img_edge.get_triplet())
-        for i, triplet in enumerate(strings):
-            samedic[triplet].append(i)
-        # ['white plate on wooden table', 'white plate on wooden table', 'white plate near lamp', 'white plate near black cat', 'white plate on wooden table', 'cat']
-        # -> {white plate on wooden table: [0,1,2], white plate near lamp: [3,4]}
-        # goal: extract unique triplet per subject
-        for items in samedic:
-            if len(samedic[items]) > 1:
-                # draw bounding box on each sub node
-                feedback_yn = None
-                for idx in samedic[items]:
-                    display_bbox(filtered_img_edges[idx].sub)
-                    feedback_yn = input('Is it this item? ')
-                    if feedback_yn == 'y':
-                        cand_list.append(filtered_img_edges[idx])
-                        break
-                if feedback_yn == 'y':   
-                    break
-            else:
-                cand_list.append(filtered_img_edges[samedic[items][0]])
-                # test
+        # samedic = defaultdict(list)
+        # strings = []
+        # for img_edge in filtered_img_edges:
+        #     strings.append(img_edge.get_triplet())
+        # for i, triplet in enumerate(strings):
+        #     samedic[triplet].append(i)
+        # # ['white plate on wooden table', 'white plate on wooden table', 'white plate near lamp', 'white plate near black cat', 'white plate on wooden table', 'cat']
+        # # -> {white plate on wooden table: [0,1,2], white plate near lamp: [3,4]}
+        # # goal: extract unique triplet per subject
+        # for items in samedic:
+        #     if len(samedic[items]) > 1:
+        #         # draw bounding box on each sub node
+        #         feedback_yn = None
+        #         for idx in samedic[items]:
+        #             display_bbox(filtered_img_edges[idx].sub)
+        #             feedback_yn = input('Is it this item? ')
+        #             if feedback_yn == 'y':
+        #                 cand_list.append(filtered_img_edges[idx])
+        #                 break
+        #         if feedback_yn == 'y':   
+        #             break
+        #     else:
+        #         cand_list.append(filtered_img_edges[samedic[items][0]])
+        #         # test
 
         #####################################################
     else:
@@ -383,7 +389,7 @@ else:
                 elif len(sub_pred_match) > 1:
                     print('mult obj, mult sub match, mult pred match')
                     attr_match = sub_pred_match.copy()
-                    # match subject attribute
+                    # match object attribute
                     for sub_pred_edge in sub_pred_match:
                         if leaf_edge.obj.attr is not None:
                             # print(leaf_edge.obj.get_attr())
@@ -398,6 +404,11 @@ else:
                     # multiple matching attribute
                     elif len(attr_match) > 1:
                         print('mult obj, mult sub, mult pred, mult attr match')
+                        # match subject attribute
+                        if leaf_edge.sub.attr is not None:
+                            for obj_attr_match in attr_match:
+                                if compare_attr(leaf_edge.sub, obj_attr_match.sub) < 0.8:
+                                    attr_match.remove(obj_attr_match)
                         ask_list.extend(attr_match)
                         ask_questions(i)
                     # no matching attribute
@@ -487,25 +498,71 @@ else:
                     ask_questions(i)
                 else:
                     print('no obj, no sub match')
+    comb_cand_list.append(cand_list)
+    cand_list = []
 
-if not isempty(cand_list):
-    if len(cand_list) == 1:
-        # achieved grounding
-        print('grounding achieved!')
-        print(cand_list[0].get_triplet())
-        display_bbox(cand_list[0].sub)
+if not isempty(comb_cand_list):
+    if len(comb_cand_list) == 1:
+        if len(comb_cand_list[0]) == 1:
+            # achieved grounding
+            print('grounding achieved!')
+            print(comb_cand_list[0][0].get_triplet())
+            display_bbox(comb_cand_list[0][0].sub)
+        else:
+            print('ask candidates')
+            # multiple candidates
+            # ask unique relation of each node
+            # unique_list = find_unique(cand_list)
+            for i, cand_edge in enumerate(comb_cand_list[0]):
+                print(str(i) + ' ' + cand_edge.get_triplet())
+                #print(cand_edge)
+            idx = int(input('which one? '))
+            print('grounding achieved!')
+            print(comb_cand_list[0][idx].get_triplet())
+            display_bbox(comb_cand_list[0][idx].sub)
     else:
-        print('ask candidates')
-        # multiple candidates
-        # ask unique relation of each node
-        #unique_list = find_unique(cand_list)
-        for i, cand_edge in enumerate(cand_list):
-            print(str(i) + ' ' + cand_edge.get_triplet())
-            #print(cand_edge)
-        idx = int(input('which one? '))
-        print('grounding achieved!')
-        print(cand_list[idx].get_triplet())
-        display_bbox(cand_list[idx].sub)
+        # multiple edges in command
+        # find object with same subject id across all cand_lists
+        # if common object exists, ground to that
+        # if not, no grounding 
+        # 다맞는게 하나만 있음 --> grounding
+        # 다맞는게 여러개 있음 --> 여러개 물어봄
+        # 다맞는게 없음 --> 그다음 많은거 물어봄
+        # countdict = defaultdict(int)
+        # for cand_list in comb_cand_list:
+        #     id_list = []
+        #     for cand in cand_list:
+        #         id_list.append(cand.sub.get_node_id())
+        #         id_list = np.unique(id_list)
+        #     for sub_id in id_list:
+        #         countdict[sub_id] += 1
+
+        # for sub_id in countdict:
+        #     if countdict[sub_id] == len(comb_cand_list):
+                # 다맞는게 있는 경우
+                # how would we know which combination gets it all
+                # eraseing the candidate?
+        first_cand_edge_list = []
+        for cand in comb_cand_list[0]:
+            first_cand_edge_list.append(cand)
+        str_list = []
+        for i, c_list in enumerate(comb_cand_list):
+            if i == 0:
+                continue
+            for cand in c_list:
+                for first_edge in first_cand_edge_list:
+                    if cand.sub.get_node_id() != first_edge.sub.get_node_id():
+                        first_cand_edge_list.remove(first_edge)
+                        c_list.remove(cand)
+
+
+            
+            
+
+        print("not implemented yet")
+        
+    
+    
 else:
     # no grounding, ask again
     print('ask again (no grounding)')
