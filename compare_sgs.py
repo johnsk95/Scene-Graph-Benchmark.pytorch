@@ -512,7 +512,6 @@ if not isempty(comb_cand_list):
             print('ask candidates')
             # multiple candidates
             # ask unique relation of each node
-            # unique_list = find_unique(cand_list)
             for i, cand_edge in enumerate(comb_cand_list[0]):
                 print(str(i) + ' ' + cand_edge.get_triplet())
                 #print(cand_edge)
@@ -536,17 +535,23 @@ if not isempty(comb_cand_list):
                 id_list = np.unique(id_list)
             for sub_id in id_list:
                 countdict[sub_id] += 1
-
+        grounded_list = []
         for sub_id in countdict:
+            # 다맞는게 있는 경우
             if countdict[sub_id] == len(comb_cand_list):
-                # 다맞는게 있는 경우
-                # how would we know which combination gets it all
-                # eraseing the candidate?
-
-            
-        
-    
-    
+                grounded_list.append(sub_id)
+        if len(grounded_list) == 1:
+            print('grounding achieved!')
+            display_bbox(sub_id)
+        elif len(grounded_list) > 1:
+            print("ask which one")
+            unique_ground = find_unique(grounded_list) # TODO id 로도 돌아가게 바꿈
+            for i, unique_edge in enumerate(unique_ground):
+                print(str(i) + ' ' + unique_edge.get_triplet())
+            idx = int(input('which one? '))
+            print('grounding achieved!')
+        else:
+            print('ask again (no grounding)')
 else:
     # no grounding, ask again
     print('ask again (no grounding)')
