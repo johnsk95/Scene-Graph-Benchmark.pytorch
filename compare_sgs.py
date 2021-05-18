@@ -10,9 +10,10 @@ model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
 lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
-img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info_2.json')
+img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
+print('number of leaves: ', len(leaf_edges))
 # candidate list
 cand_list = []
 # asking list
@@ -87,11 +88,14 @@ def find_unique(input_list):
     # extract subject id from candidate list
     if isempty(input_list):
         return input_list
-    
-    cand_ids = []
-    for edge in input_list:
-        cand_ids.append(edge.sub.get_node_id())
-    print("cand_id:", cand_ids)
+    # check if input is node id
+    if type(input_list[0]) == int:
+        cand_ids = input_list
+    else: 
+        cand_ids = []
+        for edge in input_list:
+            cand_ids.append(edge.sub.get_node_id())
+        # print("cand_id:", cand_ids)
     
     edges_contain_cand = []
     for cand in cand_ids:
@@ -100,7 +104,7 @@ def find_unique(input_list):
             if cand == edge.sub.get_node_id():
                 temp_edges.append(edge)
         edges_contain_cand.append(temp_edges)
-    print("edges_contain_cand: ", edges_contain_cand)
+    # print("edges_contain_cand: ", edges_contain_cand)
     # at this point [[edges that contain 7],[edges that contain 5],...]
     # to count occurences of the edges, we need to change the edge -> string
     # ex) 7(plate) in front of 9(table) -> plate in front of table
@@ -111,7 +115,7 @@ def find_unique(input_list):
             str_edge = edge.get_triplet()
             temp_str_edges.append(str_edge)
         str_edges_contain_cand.append(temp_str_edges)
-    print("str_edges_contain_cand: ", str_edges_contain_cand)
+    # print("str_edges_contain_cand: ", str_edges_contain_cand)
     # count occurrences of the edges
     # convert str_edges_contain_cand to list of dictionaries
     # ex) [{white plate in front of table: 3, ...}, {}, {}]
@@ -122,7 +126,7 @@ def find_unique(input_list):
         for edge in edge_list:
             freq[edge] = flat_list.count(edge.get_triplet())
         cnt_str_edges_contain_cand.append(freq)
-    print("cnt_str_edges_contain_cand: ", cnt_str_edges_contain_cand)
+    # print("cnt_str_edges_contain_cand: ", cnt_str_edges_contain_cand)
     # now we have this form [{white plate in front of table: 3, ...}, {}, {}]
     # for each dict, pick key with smallest value for each list
     # min(dict, key=d.get)
@@ -130,7 +134,7 @@ def find_unique(input_list):
     for dict in cnt_str_edges_contain_cand:
         min_occurred = min(dict.keys(), key=(lambda k: dict[k]))
         return_list.append(min_occurred)
-    print("return_list: ", return_list)
+    # print("return_list: ", return_list)
     return return_list
 
 def ask_questions(curr_leaf_idx):
@@ -248,10 +252,15 @@ def get_size(image_size):
     return (ow, oh)
 
 def display_bbox(node):
-    size = get_size(Image.open(image_path).size)
-    pic = Image.open(image_path).resize(size)
+    if type(node) == int:
+        node_id = node
+    else: 
+        node_id = node.get_node_id()
+    # size = get_size(Image.open(image_path).size)
+    # pic = Image.open(image_path).resize(size)
+    pic = Image.open(image_path)
     draw = ImageDraw.Draw(pic)
-    bbox = boxes[node.get_node_id()]
+    bbox = boxes[node_id]
     x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
     draw.rectangle(((x1, y1), (x2, y2)), outline='red')
     pic.show()
@@ -286,7 +295,8 @@ if isempty(leaf_edges):
                 # cand_list.append(img_edge)
                 filtered_img_edges.append(img_edge)
         filtered_img_edges = find_unique(filtered_img_edges)
-        cand_list.extend(filtered_img_edges)
+        # cand_list.extend(filtered_img_edges)
+        comb_cand_list.append(filtered_img_edges)
     ####
         # cand_list = img_root_edges
         ####################################################
@@ -498,11 +508,13 @@ else:
                     ask_questions(i)
                 else:
                     print('no obj, no sub match')
-    comb_cand_list.append(cand_list)
-    cand_list = []
+        comb_cand_list.append(cand_list)
+        cand_list = []
 
+print('comb list length: ', len(comb_cand_list))
 if not isempty(comb_cand_list):
     if len(comb_cand_list) == 1:
+        print('only one edge as input')
         if len(comb_cand_list[0]) == 1:
             # achieved grounding
             print('grounding achieved!')
@@ -520,6 +532,7 @@ if not isempty(comb_cand_list):
             print(comb_cand_list[0][idx].get_triplet())
             display_bbox(comb_cand_list[0][idx].sub)
     else:
+        print('multiple edges in command!')
         # multiple edges in command
         # find object with same subject id across all cand_lists
         # if common object exists, ground to that
@@ -542,7 +555,7 @@ if not isempty(comb_cand_list):
                 grounded_list.append(sub_id)
         if len(grounded_list) == 1:
             print('grounding achieved!')
-            display_bbox(sub_id)
+            display_bbox(int(sub_id))
         elif len(grounded_list) > 1:
             print("ask which one")
             unique_ground = find_unique(grounded_list) # TODO id 로도 돌아가게 바꿈
