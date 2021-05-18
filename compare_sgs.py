@@ -528,38 +528,22 @@ if not isempty(comb_cand_list):
         # 다맞는게 하나만 있음 --> grounding
         # 다맞는게 여러개 있음 --> 여러개 물어봄
         # 다맞는게 없음 --> 그다음 많은거 물어봄
-        # countdict = defaultdict(int)
-        # for cand_list in comb_cand_list:
-        #     id_list = []
-        #     for cand in cand_list:
-        #         id_list.append(cand.sub.get_node_id())
-        #         id_list = np.unique(id_list)
-        #     for sub_id in id_list:
-        #         countdict[sub_id] += 1
+        countdict = defaultdict(int)
+        for cand_list in comb_cand_list:
+            id_list = []
+            for cand in cand_list:
+                id_list.append(cand.sub.get_node_id())
+                id_list = np.unique(id_list)
+            for sub_id in id_list:
+                countdict[sub_id] += 1
 
-        # for sub_id in countdict:
-        #     if countdict[sub_id] == len(comb_cand_list):
+        for sub_id in countdict:
+            if countdict[sub_id] == len(comb_cand_list):
                 # 다맞는게 있는 경우
                 # how would we know which combination gets it all
                 # eraseing the candidate?
-        first_cand_edge_list = []
-        for cand in comb_cand_list[0]:
-            first_cand_edge_list.append(cand)
-        str_list = []
-        for i, c_list in enumerate(comb_cand_list):
-            if i == 0:
-                continue
-            for cand in c_list:
-                for first_edge in first_cand_edge_list:
-                    if cand.sub.get_node_id() != first_edge.sub.get_node_id():
-                        first_cand_edge_list.remove(first_edge)
-                        c_list.remove(cand)
-
 
             
-            
-
-        print("not implemented yet")
         
     
     
