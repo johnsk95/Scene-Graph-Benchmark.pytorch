@@ -75,9 +75,9 @@ def create_graph(pred, data):
     custom_data_info = json.load(open(data))
 
     # parameters
-    image_idx = 6
-    box_topk = 15 # select top k bounding boxes
-    rel_topk = 30 # select top k relationships
+    image_idx = 5
+    box_topk = 10 # select top k bounding boxes
+    rel_topk = 20 # select top k relationships
     ind_to_classes = custom_data_info['ind_to_classes']
     ind_to_predicates = custom_data_info['ind_to_predicates']
     ind_to_attributes = custom_data_info['ind_to_attributes']
@@ -85,10 +85,10 @@ def create_graph(pred, data):
     image_path = custom_data_info['idx_to_files'][image_idx]
     boxes = custom_prediction[str(image_idx)]['bbox'][:box_topk]
     box_labels = custom_prediction[str(image_idx)]['bbox_labels'][:box_topk]
-    box_scores = custom_prediction[str(image_idx)]['bbox_scores'][:box_topk]
+    # box_scores = custom_prediction[str(image_idx)]['bbox_scores'][:box_topk]
     box_attrs = custom_prediction[str(image_idx)]['bbox_attrs'][:box_topk]
     all_rel_labels = custom_prediction[str(image_idx)]['rel_labels']
-    all_rel_scores = custom_prediction[str(image_idx)]['rel_scores']
+    # all_rel_scores = custom_prediction[str(image_idx)]['rel_scores']
     all_rel_pairs = custom_prediction[str(image_idx)]['rel_pairs']
 
     # box labels
@@ -103,19 +103,20 @@ def create_graph(pred, data):
             idx = np.argsort(box_attrs[i])
             box_attrs[i] = ind_to_attributes[idx[-2]]
         else:
-            box_attrs[i] = ind_to_attributes[np.argmax(box_attrs[i])]
+            # box_attrs[i] = ind_to_attributes[np.argmax(box_attrs[i])]
+            box_attrs[i] = ind_to_attributes[box_attrs[i]]
     #print(box_attrs)
     
     # Relations between the boxes and initializing nodes
     rel_labels = []
-    rel_scores = []
+    # rel_scores = []
     for i in range(len(all_rel_pairs)):
         if all_rel_pairs[i][0] < box_topk and all_rel_pairs[i][1] < box_topk:
-            rel_scores.append(all_rel_scores[i])
+            # rel_scores.append(all_rel_scores[i])
             label = str(all_rel_pairs[i][0]) + '_' + box_attrs[all_rel_pairs[i][0]] + ' ' + box_labels[all_rel_pairs[i][0]] + ' => ' + ind_to_predicates[all_rel_labels[i]] + ' => ' + str(all_rel_pairs[i][1]) + '_' + box_attrs[all_rel_pairs[i][1]] + ' ' + box_labels[all_rel_pairs[i][1]]
             rel_labels.append(label)
     rel_labels = rel_labels[:rel_topk]
-    rel_scores = rel_scores[:rel_topk]
+    # rel_scores = rel_scores[:rel_topk]
     #print(rel_labels)
 
     # initialize nodes

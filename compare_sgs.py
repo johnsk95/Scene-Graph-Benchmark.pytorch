@@ -10,7 +10,7 @@ model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
 lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
-img_nodes, img_edges, boxes, image_path = ISG.create_graph('custom_prediction.json', 'custom_data_info.json')
+img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
 # candidate list
@@ -78,12 +78,14 @@ def ask_questions(curr_leaf_idx):
             cand_list.append(ask_list[0])
     else:
         samedic = defaultdict(list)
+        # white plate on wooden table -> {white plate on wooden table: [0,1,2,3], white plate next to fork: [0,1,2], }
         strings = []
         for img_edge in ask_list:
             strings.append(img_edge.get_triplet())
         # construct dict of duplicate triplets
         for i, triplet in enumerate(strings):
-            samedic[triplet].append(ask_list[i].sub.get_id())
+            # samedic[triplet].append(ask_list[i].sub.get_id())
+            samedic[triplet].append(i)
         feedback_yn = None
         for items in samedic:
             # check for same triplets
