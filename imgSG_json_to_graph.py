@@ -75,9 +75,9 @@ def create_graph(pred, data):
     custom_data_info = json.load(open(data))
 
     # parameters
-    image_idx = 6
+    image_idx = 10
     box_topk = 10 # select top k bounding boxes
-    rel_topk = 20 # select top k relationships
+    rel_topk = 40 # select top k relationships
     ind_to_classes = custom_data_info['ind_to_classes']
     ind_to_predicates = custom_data_info['ind_to_predicates']
     ind_to_attributes = custom_data_info['ind_to_attributes']
