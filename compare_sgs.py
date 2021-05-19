@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 model = SentenceTransformer('stsb-roberta-base')
 
 # make SG outputs into graphs
-lang_nodes, lang_edges = LSG.create_graph('lang_sg_result_44.json')
+lang_nodes, lang_edges = LSG.create_graph('lang_sg_result.json')
 img_nodes, img_edges, boxes, image_path = ISG.create_graph('prediction.json', 'custom_data_info.json')
 # get leaf nodes from lsg
 leaf_edges = LSG.find_edges_with_leaves(lang_edges)
@@ -390,14 +390,18 @@ else:
                 # multiple pred match
                 elif len(sub_pred_match) > 1:
                     print('mult obj, mult sub match, mult pred match')
-                    attr_match = sub_pred_match.copy()
+                    attr_match = []
                     # match object attribute
-                    for sub_pred_edge in sub_pred_match:
-                        if leaf_edge.obj.attr is not None:
+                    if leaf_edge.obj.attr is not None:
+                        for sub_pred_edge in sub_pred_match:
                             # print(leaf_edge.obj.get_attr())
                             # compare object attributes
-                            if compare_attr(leaf_edge.obj, sub_pred_edge.obj) < 0.8:
-                                attr_match.remove(sub_pred_edge)
+                            if compare_attr(leaf_edge.obj, sub_pred_edge.obj) > 0.8:
+                                attr_match.append(sub_pred_edge)
+                        if len(attr_match) == 0:
+                            attr_match = sub_pred_match
+                    else:
+                        attr_match = sub_pred_match
                     # One matching attribute
                     if len(attr_match) == 1:
                         print('mult obj, mult sub, mult pred, one attr match')
@@ -407,11 +411,17 @@ else:
                     elif len(attr_match) > 1:
                         print('mult obj, mult sub, mult pred, mult attr match')
                         # match subject attribute
+                        sub_attr_match = []
                         if leaf_edge.sub.attr is not None:
                             for obj_attr_match in attr_match:
-                                if compare_attr(leaf_edge.sub, obj_attr_match.sub) < 0.8:
-                                    attr_match.remove(obj_attr_match)
-                        ask_list.extend(attr_match)
+                                if compare_attr(leaf_edge.sub, obj_attr_match.sub) > 0.8:
+                                    sub_attr_match.append(obj_attr_match)
+                            if len(sub_attr_match) == 0:
+                                sub_attr_match = attr_match
+                        else:
+                            sub_attr_match = attr_match
+                            
+                        ask_list.extend(sub_attr_match)
                         ask_questions(i)
                     # no matching attribute
                     else:
@@ -448,19 +458,20 @@ else:
                     ask_questions(i)
                 # else:
                 elif len(pred_obj_match) > 1:
-                    print('mult obj, no sub match, mult or no pred match')
+                    print('mult obj, no sub match, mult pred match')
                     # if there are multiple objects with similar pred
                     # return one with most similar sub
-                    sim_sub = []
-                    sub_sim_scores = []
-                    for cand_sub in pred_obj_match:
-                        sim_score = compare_name(leaf_edge.sub, cand_sub.sub)
-                        sub_sim_scores.append(sim_score)
-                        sim_sub.append(cand_sub.sub.name)
-                    print('pred_obj_match: ', pred_obj_match)
-                    sub_max_score_idx = np.argmax(sub_sim_scores)
-                    ask_list.append(pred_obj_match[sub_max_score_idx])
-                    # ask_list.extend(pred_obj_match)
+
+                    # sim_sub = []
+                    # sub_sim_scores = []
+                    # for cand_sub in pred_obj_match:
+                    #     sim_score = compare_name(leaf_edge.sub, cand_sub.sub)
+                    #     sub_sim_scores.append(sim_score)
+                    #     sim_sub.append(cand_sub.sub.name)
+                    # print('pred_obj_match: ', pred_obj_match)
+                    # sub_max_score_idx = np.argmax(sub_sim_scores)
+                    #ask_list.append(pred_obj_match[sub_max_score_idx])
+                    ask_list.extend(pred_obj_match)
                     ask_questions(i)
                 else:
                     ask_list.extend(obj_matching_edges)
